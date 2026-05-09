@@ -12,8 +12,13 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 def send_telegram_message(message):
+    print("Attempting to send Telegram message...")
+    if not TELEGRAM_BOT_TOKEN:
+        print("ERROR: TELEGRAM_BOT_TOKEN is missing! Please check GitHub Secrets.")
+    if not TELEGRAM_CHAT_ID:
+        print("ERROR: TELEGRAM_CHAT_ID is missing! Please check GitHub Secrets.")
+        
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        print("Telegram tokens are not set. Skipping notification.")
         return
     
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -25,6 +30,9 @@ def send_telegram_message(message):
     }
     try:
         response = requests.post(url, json=payload)
+        print(f"Telegram API Response Status: {response.status_code}")
+        if response.status_code != 200:
+            print(f"Telegram API Error Detail: {response.text}")
         response.raise_for_status()
         print("Telegram message sent successfully.")
     except Exception as e:

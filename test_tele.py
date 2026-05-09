@@ -1,12 +1,15 @@
 import os
 import requests
 
-token = os.getenv("TELEGRAM_BOT_TOKEN")
-chat_id = os.getenv("TELEGRAM_CHAT_ID")
+token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
 print("--- Telegram Connection Test ---")
-print(f"TELEGRAM_BOT_TOKEN: {'Set (starts with ' + token[:5] + '...)' if token else 'NOT SET'}")
-print(f"TELEGRAM_CHAT_ID: {'Set (' + chat_id + ')' if chat_id else 'NOT SET'}")
+print(f"TELEGRAM_BOT_TOKEN set: {bool(token)}")
+if token and ":" not in token:
+    print("WARNING: TELEGRAM_BOT_TOKEN does not contain a colon (:). It might be incomplete.")
+
+print(f"TELEGRAM_CHAT_ID set: {bool(chat_id)}")
 
 if not token or not chat_id:
     print("Error: Secrets are not properly set in GitHub.")
@@ -20,5 +23,9 @@ else:
             print("Success! Check your Telegram.")
         else:
             print("Failed. Check the error message above.")
+            if res.status_code == 401:
+                print("Hint: 401 Unauthorized means your BOT TOKEN is wrong.")
+            elif res.status_code == 400:
+                print("Hint: 400 Bad Request usually means your CHAT ID is wrong or you haven't started the bot.")
     except Exception as e:
         print(f"Exception occurred: {e}")

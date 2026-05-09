@@ -3,13 +3,16 @@ from bs4 import BeautifulSoup
 import os
 import sys
 import urllib.parse
+import html
 
 # 설정
 URL = "https://www.mma.go.kr/board/boardList.do?gesipan_id=95&mc=usr0000152"
 BASE_URL = "https://www.mma.go.kr"
 LAST_POST_FILE = "last_post.txt"
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+# 공백 제거 처리
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
 def send_telegram_message(message):
     print("Attempting to send Telegram message...")
@@ -21,6 +24,11 @@ def send_telegram_message(message):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         return
     
+    # 봇 토큰 형식 체크 (숫자:알파벳 형태여야 함)
+    if ":" not in TELEGRAM_BOT_TOKEN:
+        print("CRITICAL ERROR: TELEGRAM_BOT_TOKEN is invalid. It must include the numeric prefix and a colon (e.g., 123456:ABCDEF).")
+        return
+
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -61,7 +69,7 @@ def scrape():
         latest_post = None
         
         for row in rows:
-            # '공지' 아이콘이 있는지 확인 (공지는 건너뜀)
+            # '공지' 아이콘이 있는지 확인 (공지는 건너뜜)
             notice_icon = row.find("span", class_="icon_notice")
             if notice_icon:
                 continue
@@ -99,7 +107,8 @@ def scrape():
         
         if latest_post['id'] != last_id:
             print("New post detected!")
-            message = f"<b>[공군 모집 새 공고]</b>\n\n{latest_post['title']}\n\n<a href='{latest_post['link']}'>👉 게시글 바로가기</a>"
+            safe_title = html.escape(latest_post['title'])
+            message = f"<b>[공군 모집 새 공고]</b>\n\n{safe_title}\n\n<a href='{latest_post['link']}'>👉 게시글 바로가기</a>"
             send_telegram_message(message)
             
             with open(LAST_POST_FILE, "w", encoding="utf-8") as f:
